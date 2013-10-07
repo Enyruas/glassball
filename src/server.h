@@ -9,6 +9,8 @@ extern "C" {
 
 // definition of server methods
 
+int create_server();
+
 #ifdef __cplusplus
 }
 #endif
