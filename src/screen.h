@@ -9,13 +9,9 @@
 extern "C" {
 #endif
 
-extern pthread_t screen_print_tid;
+extern pthread_t screen_read_tid;
 
-extern pthread_t screen_scan_tid;
-
-void *screen_print_thread(void *arg);
-
-void *screen_scan_thread(void *arg);
+void *screen_read_thread(void *arg);
 
 #ifdef __cplusplus
 }

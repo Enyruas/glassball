@@ -9,9 +9,9 @@
 extern "C" {
 #endif
 
-void com_agent_tid_push(pthread_t tid);
+void con_agent_tid_push(pthread_t tid);
 
-void *com_agent_thread(void *arg);
+void *con_agent_thread(void *arg);
 
 #ifdef __cplusplus
 }
