@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <pthread.h>
 
 #include "screen.h"
@@ -30,11 +31,13 @@ int main(int argc, char *argv[]) {
 	int len;
 	char address[16];
 	const int LISTENQ = 5;
-
+	char addrp[160];
 
 	// select net mode
-	while (s = fgets(input, 100, stdin)) {
-    	sscanf(s, "%d", &mode);
+	while (1) {
+		printf("please select the mode (0=servrer,1=client):");
+		s = fgets(input, 100, stdin);
+    	sscanf(input, "%d", &mode);
 		printf("mode=%d\n", mode);
 		switch (mode) {
 		case 0:
@@ -60,8 +63,10 @@ int main(int argc, char *argv[]) {
 				confd = accept(listenfd, (struct sockaddr *)&cliaddr, &len);
 				if (confd == -1)
 					continue;
-				printf("there is a connection\n");
-
+printf("before test\n");
+				inet_ntop(AF_INET, &cliaddr.sin_addr.s_addr, addrp, len);
+				printf("%s joined\n", addrp);
+				printf("serveraddlen=%d, clientaddrlen=%d, %d\n", sizeof(servaddr), len, sizeof(struct sockaddr));
 				confds[con_num++] = confd;
 
 				if (pthread_create(&tid, NULL, con_agent_thread, &confd) != 0)
@@ -76,7 +81,10 @@ int main(int argc, char *argv[]) {
 		case 1: 
     //call client method in client.h
 //      mode = create_client();
+			printf("input the server address: ");
 			fgets(address, 16, stdin);
+
+			if (pthread_create(&screen_read_tid, NULL, screen_read_thread, NULL) != 0) printf("thread!\n");
 
 			confd = socket(AF_INET, SOCK_STREAM, 0);
 			bzero(&servaddr, sizeof(servaddr));
@@ -84,11 +92,11 @@ int main(int argc, char *argv[]) {
             servaddr.sin_port = htons(APP_PORT);
 			if (inet_pton(AF_INET, address, &servaddr.sin_addr) < 0)
 				printf("inet_pton error for %s", address);
-			printf("address=%s\n", address);
+//.			printf("address=%s\n", address);
 	
 			if (connect(confd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) printf("connect failed\n");
-			printf("after connect\n");
-			if (pthread_create(&screen_read_tid, NULL, screen_read_thread, NULL) != 0) printf("thread!\n");
+
+			printf("you joined the server\n");
 
 			confds[con_num++] = confd;
 			con_agent_thread(&confd);
@@ -102,15 +110,6 @@ int main(int argc, char *argv[]) {
   }
 
 		
-  if ((childpid = fork()) == 0) {
-     sleep(2);
-     printf("this is the child process\n");
-       return 0;
-     }
-  printf("plese input: ");
-  scanf("%s", input);
-  printf("the input is: %s\n", input);
-
   return 0;
 }
 

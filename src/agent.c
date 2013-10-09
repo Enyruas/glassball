@@ -23,8 +23,10 @@ void *con_agent_thread(void *arg) {
 	char address[14];
 	//strcpy(address, con_info_pt->conaddr.sa_data);
 	while (1) {
-		read(confd, buf, buf_len);
-//		printf("%s\n", buf);
+		if (read(confd, buf, BUF_MAXLEN) == -1) {
+			printf("connect terminated\n");
+			break;
+		}
 		fputs(buf, stdout);
 	}
 	
