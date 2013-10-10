@@ -1,10 +1,7 @@
 #include "glassball.h"
 
 #include <stdio.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <pthread.h>
+#include <string.h>
 
 #include "screen.h"
 #include "agent.h"
@@ -13,94 +10,76 @@
 extern "C" {
 #endif
 
-#define APP_PORT 50432
-
 int mode;
 
-int confds[CON_MAXNUM];
+char hostname[HOSTNAME_MAXLENGTH];
+int hostname_len;
+
+con_info_t con_infos[CONNECT_MAXNUM];
 int con_num;
 
+void store_con(int confd, char hostname[], int hostname_len, char ipaddress[], int ipaddress_len) {
+	con_infos[con_num].confd = confd;
+	strncpy(con_infos[con_num].hostname, hostname, hostname_len);
+	strncpy(con_infos[con_num].ipaddress, ipaddress, ipaddress_len);
+	con_num++;
+}
+
+int delete_con(int confd) {
+	int i;
+	while (i < con_num && con_infos[i].confd != confd);
+	if (i == con_num)
+		return -1;
+
+	while (i + 1 < con_num) {
+		con_infos[i].confd = con_infos[i+1].confd;
+		strcpy(con_infos[i].hostname, con_infos[i+1].hostname);
+		strcpy(con_infos[i].ipaddress, con_infos[i+1].ipaddress);
+	}
+	con_num--;
+
+	return 1;
+}
+
+int get_con(int confd, char hostname[], char ipaddress[]) {
+	int i;
+	for (i = 0; i < con_num; i++) {
+		if (con_infos[i].confd == i) {
+			//strcpy(hostname, con_infos[i].hostname);
+			//strcpy(ipaddress, con_infos[i].ipaddress);
+			return 1;
+		}
+	}
+	return -1;
+}
+
 int main(int argc, char *argv[]) {
-	int listenfd, confd;
-	pid_t childpid; 
-	pthread_t tid;
-	char input[100];
-	int server, client;
-	char *s;
-	struct sockaddr_in servaddr, cliaddr;
-	int len;
-	char address[16];
-	const int LISTENQ = 5;
-	char addrp[160];
+	char input_str[10];
+
+	while (1) {
+		puts("Welcome to glassball!");
+		puts("please type your name: ");
+		if (fgets(hostname, HOSTNAME_MAXLENGTH, stdin) != NULL)
+			break;
+	}
+	hostname_len = strlen(hostname)-1;
+	hostname[hostname_len] = '\0';
 
 	// select net mode
 	while (1) {
 		printf("please select the mode (0=servrer,1=client):");
-		s = fgets(input, 100, stdin);
-    	sscanf(input, "%d", &mode);
-		printf("mode=%d\n", mode);
+		fgets(input_str, 9, stdin);
+    	sscanf(input_str, "%d", &mode);
+
 		switch (mode) {
 		case 0:
-	    //call server method in servor.h
-    		mode = create_server();
-			
-			// start write show
-			if (pthread_create(&screen_read_tid, NULL, screen_read_thread, NULL) != 0) printf("thread!\n");
-			
-			//  socket(AF_INET, SOCK_STREAM, 0)
-			listenfd = socket(AF_INET, SOCK_STREAM, 0);
-		
-			bzero(&servaddr, sizeof(servaddr));
-			servaddr.sin_family = AF_INET;
-			servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-			servaddr.sin_port = htons(APP_PORT);
-			bind(listenfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
-			if (listen(listenfd, LISTENQ) == -1) printf("listen failed\n");
-			printf("afeter listen\n");			
-
-			while (1) {
-				len = sizeof(cliaddr);
-				confd = accept(listenfd, (struct sockaddr *)&cliaddr, &len);
-				if (confd == -1)
-					continue;
-printf("before test\n");
-				inet_ntop(AF_INET, &cliaddr.sin_addr.s_addr, addrp, len);
-				printf("%s joined\n", addrp);
-				printf("serveraddlen=%d, clientaddrlen=%d, %d\n", sizeof(servaddr), len, sizeof(struct sockaddr));
-				confds[con_num++] = confd;
-
-				if (pthread_create(&tid, NULL, con_agent_thread, &confd) != 0)
-				printf("thread creation failed\n");
-				con_agent_tid_push(tid);
-			//record this new thread
-			// push(tid);
-				sleep(1);
-			}
+	    	//call server method in servor.h
+			server();	
     		break;
     
 		case 1: 
-    //call client method in client.h
-//      mode = create_client();
-			printf("input the server address: ");
-			fgets(address, 16, stdin);
-
-			if (pthread_create(&screen_read_tid, NULL, screen_read_thread, NULL) != 0) printf("thread!\n");
-
-			confd = socket(AF_INET, SOCK_STREAM, 0);
-			bzero(&servaddr, sizeof(servaddr));
-            servaddr.sin_family = AF_INET;
-            servaddr.sin_port = htons(APP_PORT);
-			if (inet_pton(AF_INET, address, &servaddr.sin_addr) < 0)
-				printf("inet_pton error for %s", address);
-//.			printf("address=%s\n", address);
-	
-			if (connect(confd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) printf("connect failed\n");
-
-			printf("you joined the server\n");
-
-			confds[con_num++] = confd;
-			con_agent_thread(&confd);
-
+		    //call client method in client.h
+			client();
 			break;
 
 		defaut:
@@ -109,7 +88,6 @@ printf("before test\n");
 
   }
 
-		
   return 0;
 }
 

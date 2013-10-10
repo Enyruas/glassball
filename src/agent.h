@@ -11,7 +11,11 @@ extern "C" {
 
 void con_agent_tid_push(pthread_t tid);
 
-void *con_agent_thread(void *arg);
+void sendout(const char *buf, int buf_len, int excldconfd);
+
+void *con_agent_server_thread(void *arg);
+
+void con_agent_client_thread(int confd);
 
 #ifdef __cplusplus
 }

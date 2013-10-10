@@ -1,5 +1,9 @@
 #include "screen.h"
 
+#include <string.h>
+
+#include "agent.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -8,27 +12,19 @@ extern "C" {
 
 pthread_t screen_read_tid;
 
-void sendout(char *buf, int buf_len) {
-	int i;
-	char Buff[200];
-	strcpy(Buff, "127.0.0.1: ");
-	strcat(Buff, buf);
-	for (i = 0; i < con_num; i++) {
-		write(confds[i], Buff, strlen(Buff));
-	}
-}
-
 void *screen_read_thread(void *arg) {
 	char input_str[INPUT_MAXLEN+1];
 	int input_len;
-	char Buff[200];
-	while (1) {
-		fgets(input_str, INPUT_MAXLEN, stdin);
+	char buf_tosend[INPUT_MAXLEN+1 + HOSTNAME_MAXLENGTH];
+
+	while (fgets(input_str, INPUT_MAXLEN, stdin) != NULL) {
 		input_len = strlen(input_str);
 
-		strcpy(Buff, "Me: ");
-		fputs(strcat(Buff, input_str), stdout);
-		sendout(input_str, input_len);
+		//write(fileno(stdout), input_str, input_len);
+		
+		memset(buf_tosend, 0, sizeof(buf_tosend));
+		sprintf(buf_tosend, "%s: %s", hostname, input_str);
+		sendout(buf_tosend, input_len + hostname_len+2, -1);
 	}	
 }
 

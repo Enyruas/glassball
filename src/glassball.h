@@ -3,19 +3,36 @@
 
 #include <stdio.h>
 #include <netinet/in.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define CON_MAXNUM 100
+#define HOSTNAME_MAXLENGTH 255
+#define CONNECT_MAXNUM 100
+#define APP_PORT 50432
 
-extern int confds[CON_MAXNUM];
+extern int mode;
+
+extern char hostname[];
+extern int hostname_len;
+
+//extern int confds[CON_MAXNUM];
 extern int con_num;
 
-struct con_info {
+typedef struct {
 	int confd;
-	struct sockaddr conaddr;
-};
+	char hostname[HOSTNAME_MAXLENGTH];
+	char ipaddress[16];
+}con_info_t;
+
+extern con_info_t con_infos[CONNECT_MAXNUM];
+
+void store_con(int confd, char hostname[], int hostname_len, char ipaddress[], int ipaddress_len);
+
+int delede_con(int confd);
+
+int get_con(int confd, char hostname[], char ipaddress[]);
 
 // definition of common data types and methods
 
