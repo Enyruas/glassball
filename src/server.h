@@ -7,8 +7,9 @@
 extern "C" {
 #endif
 
-// definition of server methods
-extern int listenfd;
+int getlistenfd();
+
+void server();
 
 #ifdef __cplusplus
 }

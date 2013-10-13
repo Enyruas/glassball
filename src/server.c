@@ -16,6 +16,10 @@ extern "C" {
 
 int listenfd = 0;
 
+int getlistenfd() {
+	return listenfd;
+}
+
 void server() {
 	int confd;
     pthread_t tid;

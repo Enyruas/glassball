@@ -43,8 +43,8 @@ void *screen_read_thread(void *arg) {
 			if (getmode() == 0) {
 				shutdown_cons();
 				close_cons();
-				shutdown(listenfd, SHUT_RDWR);
-				close(listenfd);
+				shutdown(getlistenfd(), SHUT_RDWR);
+				close(getlistenfd());
 			}
 			else {
 				shutdown_cons();
