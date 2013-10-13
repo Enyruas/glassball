@@ -10,13 +10,25 @@
 extern "C" {
 #endif
 
-int mode;
+int mode = 0;
+
+int getmode() {
+	return mode;
+}
 
 char hostname[HOSTNAME_MAXLENGTH];
-int hostname_len;
+int hostname_len = 0;
+
+const char *gethostname() {
+	return hostname;
+}
+
+int gethostnamelen() {
+	return hostname_len;
+}
 
 con_info_t con_infos[CONNECT_MAXNUM];
-int con_num;
+int con_num = 0;
 
 void store_con(int confd, char hostname[], int hostname_len, char ipaddress[], int ipaddress_len) {
 	con_infos[con_num].confd = confd;
@@ -41,12 +53,28 @@ int delete_con(int confd) {
 	return 1;
 }
 
+void close_cons() {
+    int i;
+    for (i = 0; i < con_num; i++)
+        close(con_infos[i].confd);
+
+    con_num = 0;
+}
+
+void shutdown_cons() {
+    int i;
+    for (i = 0; i < con_num; i++)
+        shutdown(con_infos[i].confd, SHUT_WR);
+
+    con_num = 0;
+}
+
 int get_con(int confd, char hostname[], char ipaddress[]) {
 	int i;
 	for (i = 0; i < con_num; i++) {
-		if (con_infos[i].confd == i) {
-			//strcpy(hostname, con_infos[i].hostname);
-			//strcpy(ipaddress, con_infos[i].ipaddress);
+		if (con_infos[i].confd == confd) {
+			strcpy(hostname, con_infos[i].hostname);
+			strcpy(ipaddress, con_infos[i].ipaddress);
 			return 1;
 		}
 	}
@@ -54,6 +82,7 @@ int get_con(int confd, char hostname[], char ipaddress[]) {
 }
 
 int main(int argc, char *argv[]) {
+
 	char input_str[10];
 
 	while (1) {
@@ -62,11 +91,13 @@ int main(int argc, char *argv[]) {
 		if (fgets(hostname, HOSTNAME_MAXLENGTH, stdin) != NULL)
 			break;
 	}
+
 	hostname_len = strlen(hostname)-1;
 	hostname[hostname_len] = '\0';
 
 	// select net mode
 	while (1) {
+
 		printf("please select the mode (0=servrer,1=client):");
 		fgets(input_str, 9, stdin);
     	sscanf(input_str, "%d", &mode);
@@ -75,17 +106,19 @@ int main(int argc, char *argv[]) {
 		case 0:
 	    	//call server method in servor.h
 			server();	
+			return 0;
     		break;
     
 		case 1: 
 		    //call client method in client.h
 			client();
+			return 0;
 			break;
 
 		defaut:
-			;
+			continue;
+			break;
 	    }
-
   }
 
   return 0;

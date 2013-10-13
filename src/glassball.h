@@ -12,13 +12,10 @@ extern "C" {
 #define CONNECT_MAXNUM 100
 #define APP_PORT 50432
 
-extern int mode;
+int getmode();
 
-extern char hostname[];
-extern int hostname_len;
-
-//extern int confds[CON_MAXNUM];
-extern int con_num;
+const char *gethostname();
+int gethostnamelen();
 
 typedef struct {
 	int confd;
@@ -27,14 +24,13 @@ typedef struct {
 }con_info_t;
 
 extern con_info_t con_infos[CONNECT_MAXNUM];
+extern int con_num;
 
 void store_con(int confd, char hostname[], int hostname_len, char ipaddress[], int ipaddress_len);
-
 int delede_con(int confd);
-
+void close_cons();
+void shutdown_cons();
 int get_con(int confd, char hostname[], char ipaddress[]);
-
-// definition of common data types and methods
 
 #ifdef __cplusplus
 }

@@ -8,8 +8,7 @@ extern "C" {
 #endif
 
 // definition of server methods
-
-int create_server();
+extern int listenfd;
 
 #ifdef __cplusplus
 }

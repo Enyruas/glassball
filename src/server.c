@@ -10,8 +10,14 @@
 #include "agent.h"
 #include "screen.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int listenfd = 0;
+
 void server() {
-	int listenfd, confd;
+	int confd;
     pthread_t tid;
     struct sockaddr_in servaddr, cliaddr;
     int len;
@@ -35,13 +41,15 @@ void server() {
 
 	while (1) {
 		confd = accept(listenfd, (struct sockaddr *)&cliaddr, &len);
-		if (confd == -1)
-			continue;
+		if (confd == -1) {
+			puts("quit the application");
+			break;
+		}
 
 		inet_ntop(AF_INET, &cliaddr.sin_addr.s_addr, addrp, len);
 		clientname_len = read(confd, clientname, HOSTNAME_MAXLENGTH);
 		clientname[clientname_len] = '\0';
-		write(confd, hostname, hostname_len);
+		write(confd, gethostname(), gethostnamelen());
 
 		memset(buf, 0, sizeof(buf));
 		sprintf(buf, "%s joined the network\n", clientname);
@@ -55,3 +63,6 @@ void server() {
 	}
 }
 
+#ifdef __cplusplus
+}
+#endif

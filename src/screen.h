@@ -11,6 +11,12 @@ extern "C" {
 
 extern pthread_t screen_read_tid;
 
+void open_screen_read();
+
+void close_screen_read();
+
+int get_screen_read_open();
+
 void *screen_read_thread(void *arg);
 
 #ifdef __cplusplus

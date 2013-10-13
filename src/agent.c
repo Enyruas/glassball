@@ -12,12 +12,6 @@ extern "C" {
 
 #define BUF_MAXLEN 100
 
-static pthread_t *con_agent_tid;
-
-void con_agent_tid_push(pthread_t tid) {
-
-}
-
 void sendout(const char *buf, int buf_len, int excldconfd) {
     int i;
 
@@ -41,12 +35,25 @@ int recvfromcon(int confd, char buf[]) {
 void *con_agent_server_thread(void *arg) {
 	int confd = *(int *)arg;
 	char buf[BUF_MAXLEN+1];
+	char name[HOSTNAME_MAXLENGTH], address[16];
 	int buf_len;
-	//strcpy(address, con_info_pt->conaddr.sa_data);
+
 	while (1) {
-		buf_len = recvfromcon(confd, buf);
+		if ((buf_len = recvfromcon(confd, buf)) <= 0) {
+			if (get_screen_read_open() == 1) {
+				shutdown(confd, SHUT_WR);
+
+				if (get_con(confd, name, address) == -1)
+		            puts("getcon failed");
+	    	    sprintf(buf, "%s exited\n", name);
+        		printf("%s", buf);
+		        sendout(buf, strlen(buf), confd);
+	    	    delete_con(confd);
+			}
+			close(confd);
+			break;
+		}
 		write(fileno(stdout), buf, buf_len);
-		
 		sendout(buf, buf_len, confd);
 	}
 }
@@ -56,14 +63,18 @@ void con_agent_client_thread(int confd) {
 	int buf_len;
 	char address[16], name[HOSTNAME_MAXLENGTH];
 	while (1) {
-		if ((buf_len = recvfromcon(confd, buf)) == -1) {
-			if (get_con(confd, name, address) == -1)
-				puts("getcon failed");
-			sprintf(buf, "%s exited\n", name);
-			delete_con(confd);
+		if ((buf_len = recvfromcon(confd, buf)) <= 0) {
+			if (get_screen_read_open() == 1) {
+				shutdown(confd, SHUT_WR);
 
-			printf("%s", buf);
-			sendout(buf, strlen(buf), -1);
+				if (get_con(confd, name, address) == -1)
+					puts("getcon failed");
+				sprintf(buf, "%s exited\n", name);
+				printf("%s", buf);
+			} else puts("quit glassball!");
+
+			close(confd);
+			delete_con(confd);
 			break;
 		}
 		write(fileno(stdout), buf, buf_len);

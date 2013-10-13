@@ -9,8 +9,6 @@
 extern "C" {
 #endif
 
-void con_agent_tid_push(pthread_t tid);
-
 void sendout(const char *buf, int buf_len, int excldconfd);
 
 void *con_agent_server_thread(void *arg);
