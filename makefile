@@ -1,7 +1,7 @@
 all: glassball
 
 glassball: glassball_main client server agent screen
-	gcc -o glassball client.o server.o glassball.o agent.o screen.o -lpthread
+	gcc -static -o glassball client.o server.o glassball.o agent.o screen.o -lpthread
 glassball_main: src/glassball.c src/glassball.h
 	gcc -c -o glassball.o src/glassball.c
 client: src/client.c src/client.h
