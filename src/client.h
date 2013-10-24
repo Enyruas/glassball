@@ -9,6 +9,8 @@ extern "C" {
 
 // client method
 
+void client();
+
 #ifdef __cplusplus
 }
 #endif
