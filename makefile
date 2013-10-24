@@ -1,14 +1,17 @@
-all: glassball
+IDIR=src
+SERVER=server.c server.h
+OBJ = server.o client.o glassball.o
 
-glassball: glassball_main client server 
-	gcc -o glassball client.o server.o glassball.o
-glassball_main: src/glassball.c src/glassball.h
-	gcc -c -o glassball.o src/glassball.c
-client: src/client.c src/client.h
-	gcc -c -o client.o src/client.c
-server: src/server.c src/server.h
-	gcc -c -o server.o src/server.c
+glassball: $(OBJ)
+	$(CC) -o $@ $(OBJ) $(CLAGS)
+glassball.o: $(IDIR)/glassball.c $(IDIR)/glassball.h
+	$(CC) -c -o $@ $< 
+client.o: $(IDIR)/client.c $(IDIR)/client.h
+	$(CC) -c -o $@ $<
+server.o: $(IDIR)/server.c $(IDIR)/server.h
+	$(CC) -c -o $@ $<
 
+.PHONY: clean
 clean:
 	rm -rf *.o
 
