@@ -15,6 +15,8 @@
 #include "screen.h"*/
 #include "Stream.h"
 
+#define max(a, b) ((a) > (b) ? (a) : (b))
+
 Server::Server(std::string hostName): hostName_(hostName), confds_(), listenfd_(0) {
 //	FD_ZERO(set_);
 }
@@ -71,7 +73,7 @@ void Server::start() {
     struct sockaddr_in servaddr, cliaddr;
     int len;
 
-	listenfd_ = this->socket(AF_INET, SOCK_STREAM, 0);
+	listenfd_ = socket(AF_INET, SOCK_STREAM, 0);
 	bind();
 	listen(); 
 	SCREENSTREAM<<"listening";
@@ -79,6 +81,7 @@ void Server::start() {
 	FD_ZERO(&set_);
 	FD_SET(listenfd_, &set_);
 	FD_SET(fileno(stdin), &set_);
+	int maxfdp1 = max(fileno(stdin), listenfd_) + 1;
 
 	while (1) {
 		int setNum = select(confds_.size(), &set_, NULL, NULL, NULL);
@@ -97,10 +100,10 @@ void Server::start() {
 			}
 			
 			else {
-	    		char addrp[160];
+			    char addrp[160];
 			    char clientname[HOSTNAME_MAXLENGTH];
 			    int clientname_len;
-		    	char buf[1000];
+			    char buf[1000];
 
 				inet_ntop(AF_INET, &cliaddr.sin_addr.s_addr, addrp, len);
 //				clientname_len = read(confd, clientname, HOSTNAME_MAXLENGTH);

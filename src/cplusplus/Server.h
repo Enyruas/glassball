@@ -31,9 +31,9 @@ class Server {
     typedef struct con_T{
         int fd;
         std::string clientName;
-		std::string ipaddress;
-		con_T(int _fd, std::string _clientName, std::string _ipaddress): 
-				fd(_fd), clientName(_clientName), ipaddress(_ipaddress) {}
+	std::string ipaddress;
+	con_T(int _fd, std::string _clientName, std::string _ipaddress): 
+		fd(_fd), clientName(_clientName), ipaddress(_ipaddress) {}
     }con_T;
     std::vector<con_T> confds_;
 

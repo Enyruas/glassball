@@ -10,14 +10,14 @@
 class ErrorStream {
   public:
 	void operator<<(std::string log) {
-		std::cout<<"Error log"<<log;
+		std::cout<<"Error log"<<log<<std::endl;
 	}
 };
 
 class ScreenStream {
   public:
 	void operator<<(std::string log) {
-		std::cout<<"Screen log"<<log;
+		std::cout<<"Screen log"<<log<<std::endl;
 	}
 };
 
