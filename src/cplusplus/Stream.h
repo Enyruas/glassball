@@ -9,15 +9,25 @@
 
 class ErrorStream {
   public:
-	void operator<<(std::string log) {
+	ErrorStream operator<<(std::string log) {
 		std::cout<<"Error log"<<log<<std::endl;
+		return *this;
+	}
+	ErrorStream operator<<(const char *log) {
+		std::cout<<"Error log"<<log<<std::endl;
+		return *this;
 	}
 };
 
 class ScreenStream {
   public:
-	void operator<<(std::string log) {
-		std::cout<<"Screen log"<<log<<std::endl;
+	ScreenStream operator<<(std::string log) {
+		std::cout<<log;
+		return *this;
+	}
+	ScreenStream operator<<(const char *log) {
+		std::cout<<log;
+		return *this;
 	}
 };
 

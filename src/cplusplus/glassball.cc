@@ -3,18 +3,19 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <iostream>
+
+#include "Stream.h"
 #include "Server.h"
-//#include "Client.h"
-//#include "screen.h"
-//#include "agent.h"
+#include "Client.h"
 
 int main(int argc, char *argv[]) {
 	char hostname[HOSTNAME_MAXLENGTH];
 	int hostname_len = 0;
 
 	while (1) {
-	    puts("Welcome to glassball!");
-	    puts("please type your name: ");
+	    SCREENSTREAM<<"Welcome to glassball!\n";
+	    SCREENSTREAM<<"please type your name: ";
 		if (fgets(hostname, HOSTNAME_MAXLENGTH, stdin) != NULL)
 			break;
 	}
@@ -25,7 +26,7 @@ int main(int argc, char *argv[]) {
 	// select net mode
 	while (1) {
 
-	    printf("please select the mode (0=servrer,1=client):");
+	    SCREENSTREAM<<"please select the mode (0=server,1=client, 2=quit):";
 	    char input_str[10];
 	    int mode;
 	    fgets(input_str, 9, stdin);
@@ -37,18 +38,25 @@ int main(int argc, char *argv[]) {
 	    {
 		Server server(hostname);	
 		server.start();
-	        return 0;
-		break;
 	    }
+		break;
 	    case 1: 
 		//call client method in client.h
-//		client client(hostname);
-//		client.start();
+		{
+			SCREENSTREAM<<"input the server address: ";
+			char address[16];
+			fgets(address, 16, stdin);
+
+			Client client(hostname, address);
+			client.start();
+		}
+		break;
+	    case 2:
+		SCREENSTREAM<<"Quit glassball\n";
 		return 0;
 		break;
 
 	    defaut:
-		continue;
 		break;
 	    }
 	}

@@ -15,16 +15,19 @@ class Server {
     ~Server();
 
     void start();
-	
-	void broadcastOut(const std::string &buf, int excldconfd);
+	std::string hostName() const { return hostName_; }
+	void setHostName(std::string hostName) { hostName_ = hostName; }
+	void broadcastOut(const char *buf, int len, int excldconfd);
+	void broadcastOut(const std::string str, int excldconfd);
 
     static const int kConnectMaxnum = 100;
 
   private:
-    int socket(int domain, int type, int protocol);
-    int bind();
-    int listen();
-    int accept(struct sockaddr_in &cliaddr, int &len);
+    int doSocket(int domain, int type, int protocol);
+    int doBind();
+    int doListen();
+    int doAccept(struct sockaddr_in &cliaddr, int &len);
+	void exchangeName(int confd, struct sockaddr_in &cliaddr, int len);
 
 	std::string hostName_;
 
