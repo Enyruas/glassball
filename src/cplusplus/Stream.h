@@ -10,11 +10,11 @@
 class ErrorStream {
   public:
 	ErrorStream operator<<(std::string log) {
-		std::cout<<"Error log"<<log<<std::endl;
+		std::cout<<"Error log: "<<log<<std::endl;
 		return *this;
 	}
 	ErrorStream operator<<(const char *log) {
-		std::cout<<"Error log"<<log<<std::endl;
+		std::cout<<"Error log: "<<log<<std::endl;
 		return *this;
 	}
 };

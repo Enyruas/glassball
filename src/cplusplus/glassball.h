@@ -5,4 +5,6 @@
 #define CONNECT_MAXNUM 100
 #define APP_PORT 50432
 
+#define max(a, b) ((a) > (b) ? (a) : (b))
+
 #endif

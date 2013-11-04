@@ -2,34 +2,21 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/select.h>
 #include <arpa/inet.h>
-#include <pthread.h>
 #include <string.h>
 
 #include "glassball.h"
-/*#include "agent.h"
-#include "screen.h"*/
 #include "Stream.h"
 
-#define max(a, b) ((a) > (b) ? (a) : (b))
+Server::Server(std::string hostName): BasicIO(hostName), confds_(), listenfd_(0) {
 
-Server::Server(std::string hostName): hostName_(hostName), confds_(), listenfd_(0) {
-//	FD_ZERO(set_);
 }
 	
 Server::~Server() { }
-
-int Server::doSocket(int domain, int type, int protocol) {
-	int fd = socket(domain, type, protocol);
-	if (fd < 0) 
-		ERRSTREAM<<"socket error";
-	return fd;
-}
 
 int Server::doBind() {
 	struct sockaddr_in servaddr;
@@ -149,7 +136,6 @@ void Server::start() {
 			int confd = doAccept(cliaddr, len);
 			if (confd == -1) 
 				SCREENSTREAM<<"quit the application";
-			
 			else exchangeName(confd, cliaddr, len);
 
 			if (--setNum <= 0)

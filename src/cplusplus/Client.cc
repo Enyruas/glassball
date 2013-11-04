@@ -7,22 +7,14 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "glassball.h"
 #include "Stream.h"
 
-#define max(a, b) ((a) > (b) ? (a) : (b))
-
-Client::Client(std::string hostname, std::string address): hostName_(hostname), address_(address) {
+Client::Client(std::string hostname, std::string address): BasicIO(hostname), address_(address) {
 
 }
 
 Client::~Client() {
-}
-
-int Client::doSocket(int domain, int type, int protocol) {
-        int fd = socket(domain, type, protocol);
-        if (fd < 0)  
-                ERRSTREAM<<"socket error";
-        return fd; 
 }
 
 int Client::doConnect(std::string address) {

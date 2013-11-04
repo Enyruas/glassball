@@ -6,9 +6,9 @@ glassball_cxx: $(OBJ)
 	$(CXX) -o $@ $^ $(CLAGS) $(LIB)
 glassball.o: $(IDIR)glassball.cc $(IDIR)glassball.h
 	$(CXX) -c -o $@ $< 
-Client.o: $(IDIR)Client.cc $(IDIR)Client.h $(IDIR)Stream.h
+Client.o: $(IDIR)Client.cc $(IDIR)Client.h $(IDIR)Stream.h $(IDIR)glassball.h $(IDIR)BasicIO.h
 	$(CXX) -c -o $@ $<
-Server.o: $(IDIR)Server.cc $(IDIR)Server.h $(IDIR)Stream.h
+Server.o: $(IDIR)Server.cc $(IDIR)Server.h $(IDIR)Stream.h $(IDIR)glassball.h $(IDIR)BasicIO.h
 	$(CXX) -c -o $@ $<
 
 .PHONY: clean
