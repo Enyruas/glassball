@@ -5,7 +5,6 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <sys/select.h>
 #include <arpa/inet.h>
 #include <string.h>
 
@@ -51,10 +50,10 @@ int Server::doAccept(struct sockaddr_in &cliaddr, int &len) {
 }
 
 void Server::broadcastOut(const char *buf, int len, int excldconfd) {
-    for (std::vector<con_T>::iterator it = confds_.begin();
+    for (std::list<con_T>::iterator it = confds_.begin();
 			it != confds_.end();
 			it++) {
-		if (it->fd != -1 && it->fd != excldconfd)
+		if (it->fd != excldconfd)
 			write(it->fd, buf, len);
     }
 }
@@ -90,81 +89,78 @@ void Server::start() {
 		return;
 	SCREENSTREAM<<"Listening...\n";
 
-	while (1) {
-		FD_ZERO(&set_);
-		FD_SET(listenfd_, &set_);
-		FD_SET(fileno(stdin), &set_);
-		int maxfd = max(fileno(stdin), listenfd_);
-		
-		for (std::vector<con_T>::iterator it = confds_.begin();
-				it != confds_.end();
-				it++) {
-			if (it->fd != -1) {
-				FD_SET(it->fd, &set_);			
-				maxfd = max(maxfd, it->fd);
-			}
-		}
+	addPollfd(listenfd_);
+	addPollfd(fileno(stdin));
 
-		int setNum = select(maxfd+1, &set_, NULL, NULL, NULL);
+	while (1) {
+		int pollNum = doPoll(0);
 
 		// handle select error
-		if (setNum < 0) {
+		if (pollNum < 0) {
 			ERRSTREAM<<"select wrong";
 			continue;
 		}
-
-		if (FD_ISSET(fileno(stdin), &set_)) {
+		if (pollfds_[1].revents & POLLRDNORM) {
 			char buf[100];	
 			fgets(buf, 100, stdin);
 			if (buf[0] == '\n') {
-				for (std::vector<con_T>::iterator it = confds_.begin();
+				for (std::list<con_T>::iterator it = confds_.begin();
 					it != confds_.end();
 					it++) 
-					if (it->fd != -1) 
-						close(it->fd);			
+					close(it->fd);			
 				SCREENSTREAM<<"You exited glassball\n";
 				return;
 			} else {
 				std::string str = hostName() + ": " + buf;
 				broadcastOut(str, -1);
 			}
-			if (--setNum <= 0)
+			if (--pollNum <= 0)
 				continue;
 		}
 		// handle the connection from clients
-		if (FD_ISSET(listenfd_, &set_)) {
+		if (pollfds_[0].revents & POLLRDNORM) {
 			struct sockaddr_in cliaddr;
 			int len;
 			int confd = doAccept(cliaddr, len);
 			if (confd == -1) 
 				SCREENSTREAM<<"quit the application";
-			else exchangeName(confd, cliaddr, len);
+			else {
+				exchangeName(confd, cliaddr, len);
+				addPollfd(confd);
+			}
 
-			if (--setNum <= 0)
+			if (--pollNum <= 0)
 				continue;
 		}
 		// read from clients
-		for (std::vector<con_T>::iterator it = confds_.begin();
-				it != confds_.end();
-				it++) {
-			if (FD_ISSET(it->fd, &set_)) {
+		std::list<std::list<con_T>::iterator>delli;
+		for (int i = 2; i < pollfds_.size(); i++) {
+		/* check all clients for data */
+			if (pollfds_[i].fd > 0 && (pollfds_[i].revents & (POLLRDNORM | POLLERR))) {
+				std::list<con_T>::iterator it = confds_.begin();
+				for (; it != confds_.end() && it->fd != pollfds_[i].fd; it++); 
 				char buf[100];
 				int nread = read(it->fd, buf, 99);
+				buf[nread] = '\0';
 				if (nread == 0) {
 					close(it->fd);
-					FD_CLR(it->fd, &set_);
-					it->fd = -1;
 					std::string str = it->clientName + " exited glassball\n";
 					SCREENSTREAM<<str;
 					broadcastOut(str, -1);
+
+					pollfds_[i].fd = -1;
+					it->fd = -1;
+					delli.push_back(it);
 				} else {
-					buf[nread] = '\0';
 					SCREENSTREAM<<buf;
 					broadcastOut(buf, strlen(buf), it->fd);
 				}
 
-				if (--setNum <= 0)
+				if (--pollNum <= 0) {
+					for (std::list<std::list<con_T>::iterator>::iterator delit = delli.begin(); delit != delli.end(); delit++)
+						confds_.erase(*delit);
 					break;	
+				}
 			}
 		}
 	}

@@ -3,11 +3,12 @@
 
 #include "BasicIO.h"
 
-#include <sys/select.h>
+#include <poll.h>
 
 #include <iostream>
-#include <vector>
+#include <list>
 #include <string>
+#include <vector>
 
 class Server: public BasicIO {
   public:
@@ -24,10 +25,25 @@ class Server: public BasicIO {
     int doAccept(struct sockaddr_in &cliaddr, int &len);
 	void exchangeName(int confd, struct sockaddr_in &cliaddr, int len);
 
-    std::vector<con_T> confds_;
+    std::list<con_T> confds_;
 
     int listenfd_;
-    fd_set set_;
+
+	std::vector<struct pollfd> pollfds_;
+	void addPollfd(int fd) {
+		int i = 0;
+		for (; i < pollfds_.size(); i++)
+			if (pollfds_[i].fd == -1) {
+				pollfds_[i].fd = fd;
+				pollfds_[i].events = POLLRDNORM;
+				break;
+			}
+		if (i == pollfds_.size())
+			pollfds_.push_back((struct pollfd){.fd=fd, .events=POLLRDNORM});
+	}
+	int doPoll(int timeout) {
+		poll(&(pollfds_[0]), pollfds_.size(), timeout);
+	}
 };
 
 
