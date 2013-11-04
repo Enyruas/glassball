@@ -16,7 +16,9 @@ Server::Server(std::string hostName): BasicIO(hostName), confds_(), listenfd_(0)
 
 }
 	
-Server::~Server() { }
+Server::~Server() { 
+
+}
 
 int Server::doBind() {
 	struct sockaddr_in servaddr;
