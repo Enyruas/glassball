@@ -79,6 +79,68 @@ void Server::exchangeName(int confd, struct sockaddr_in &cliaddr, int len) {
 	broadcastOut(str, confd);
 }
 
+std::string Server::getConfdClientName(int fd) {
+	for (std::list<con_T>::iterator it = confds_.begin(); it != confds_.end(); it++)
+		if (it->fd == fd) {
+			return it->clientName;
+		}
+	return std::string();
+}
+void Server::delConfd(int fd) {
+	for (std::list<con_T>::iterator it = confds_.begin(); it != confds_.end(); it++)
+		if (it->fd == fd) {
+			confds_.erase(it);
+			return;
+		}
+}
+
+void Server::initializePollfd () {
+	assert(listenfd_);
+
+	pollfds_.clear();
+	addPollfd(fileno(stdin));
+	addPollfd(listenfd_);
+}
+void Server::addPollfd(int fd) {
+	int i = 0;
+	for (; i < pollfds_.size(); i++)
+		if (pollfds_[i].fd == -1) {
+			pollfds_[i].fd = fd;
+			pollfds_[i].events = POLLRDNORM;
+			break;
+		}
+	if (i == pollfds_.size())
+		pollfds_.push_back((struct pollfd) {.fd=fd, .events=POLLRDNORM});
+}
+
+int Server::doPoll(int timeout) {
+	poll(&(pollfds_[0]), pollfds_.size(), timeout);
+}
+bool Server::pollListenCall() const {
+	assert(pollfds_[1].fd);
+	if (pollfds_[1].fd != listenfd_)
+		ERRSTREAM<<"listenfd is not in poll configuration!";
+	return (pollfds_[1].revents & POLLRDNORM);
+}
+bool Server::pollStdinCall() const {
+	if (pollfds_[0].fd != fileno(stdin))
+		ERRSTREAM<<"stdin is not in poll configuration!";
+	return (pollfds_[0].revents & POLLRDNORM);
+}
+int Server::getPollConCallIndex() const {
+	for (int i = 2; i < pollfds_.size(); i++) {
+		if (pollfds_[i].fd > 0 && (pollfds_[i].revents & (POLLRDNORM | POLLERR)))
+			return i;
+	}
+	return -1;
+}
+int Server::getPollfd(int index) const {
+	return pollfds_[index].fd;
+}
+void Server::delPollfd(int index) {
+	pollfds_.erase(pollfds_.begin() + index);
+}
+
 void Server::start() {
 
 	if ((listenfd_ = doSocket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -89,18 +151,17 @@ void Server::start() {
 		return;
 	SCREENSTREAM<<"Listening...\n";
 
-	addPollfd(listenfd_);
-	addPollfd(fileno(stdin));
-
+	initializePollfd();
 	while (1) {
-		int pollNum = doPoll(0);
+		int pollNum = doPoll(-1);
 
 		// handle select error
 		if (pollNum < 0) {
 			ERRSTREAM<<"select wrong";
 			continue;
 		}
-		if (pollfds_[1].revents & POLLRDNORM) {
+		// handle stdin
+		if (pollStdinCall()) {
 			char buf[100];	
 			fgets(buf, 100, stdin);
 			if (buf[0] == '\n') {
@@ -118,7 +179,7 @@ void Server::start() {
 				continue;
 		}
 		// handle the connection from clients
-		if (pollfds_[0].revents & POLLRDNORM) {
+		if (pollListenCall()) {
 			struct sockaddr_in cliaddr;
 			int len;
 			int confd = doAccept(cliaddr, len);
@@ -133,35 +194,26 @@ void Server::start() {
 				continue;
 		}
 		// read from clients
-		std::list<std::list<con_T>::iterator>delli;
-		for (int i = 2; i < pollfds_.size(); i++) {
-		/* check all clients for data */
-			if (pollfds_[i].fd > 0 && (pollfds_[i].revents & (POLLRDNORM | POLLERR))) {
-				std::list<con_T>::iterator it = confds_.begin();
-				for (; it != confds_.end() && it->fd != pollfds_[i].fd; it++); 
-				char buf[100];
-				int nread = read(it->fd, buf, 99);
-				buf[nread] = '\0';
-				if (nread == 0) {
-					close(it->fd);
-					std::string str = it->clientName + " exited glassball\n";
-					SCREENSTREAM<<str;
-					broadcastOut(str, -1);
+		for (int index = getPollConCallIndex(); index >= 0; ) {
+			int fd = getPollfd(index);
+			char buf[100];
+                        int nread = read(fd, buf, 99);
+			buf[nread] = '\0';
+			if (nread == 0) {
+				std::string str = getConfdClientName(fd) + " exited glassball\n";
+				close(fd);
+				delPollfd(index);
+				delConfd(fd);
 
-					pollfds_[i].fd = -1;
-					it->fd = -1;
-					delli.push_back(it);
-				} else {
-					SCREENSTREAM<<buf;
-					broadcastOut(buf, strlen(buf), it->fd);
-				}
-
-				if (--pollNum <= 0) {
-					for (std::list<std::list<con_T>::iterator>::iterator delit = delli.begin(); delit != delli.end(); delit++)
-						confds_.erase(*delit);
-					break;	
-				}
+				SCREENSTREAM<<str;
+				broadcastOut(str, -1);
+			} else {
+				SCREENSTREAM<<buf;
+				broadcastOut(buf, strlen(buf), fd);
 			}
+
+			if (--pollNum <= 0)
+				break;
 		}
 	}
 }
